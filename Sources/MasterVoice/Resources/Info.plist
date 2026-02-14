@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>MasterVoice</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleDisplayName</key>
+  <string>Master Voice</string>
+  <key>CFBundleName</key>
+  <string>Master Voice</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.mastervoice.app</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Master Voice needs microphone access for dictation and command recognition.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>Master Voice needs speech recognition access to understand spoken commands.</string>
+</dict>
+</plist>
