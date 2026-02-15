@@ -12,19 +12,19 @@ public struct IntentParser {
         let normalized = normalize(trimmedInput)
 
         switch normalized {
-        case "komut modu":
+        case "komut modu", "command mode", "komut", "command":
             return .switchMode(.command)
-        case "dikte modu":
+        case "dikte modu", "dictation mode", "dictate mode", "yazma modu":
             return .switchMode(.dictation)
-        case "okuma modu":
+        case "okuma modu", "read mode", "reading mode":
             return .switchMode(.read)
-        case "iptal":
+        case "iptal", "cancel", "stop", "vazgec":
             return .cancel
-        case "gonder", "mesaji gonder":
+        case "gonder", "mesaji gonder", "send", "send message", "submit":
             return .send
-        case "bunu oku", "secili metni oku":
+        case "bunu oku", "secili metni oku", "read this", "read selection", "read selected text":
             return .readSelection
-        case "ozetle", "secili metni ozetle":
+        case "ozetle", "secili metni ozetle", "summarize", "summarize this", "summarize selection":
             return .summarizeSelection
         default:
             break
@@ -32,6 +32,13 @@ public struct IntentParser {
 
         if normalized.hasPrefix("yaz:") {
             let text = String(trimmedInput.dropFirst(4)).trimmingCharacters(in: .whitespaces)
+            if !text.isEmpty {
+                return .dictate(text: text)
+            }
+        }
+
+        if normalized.hasPrefix("write:") {
+            let text = String(trimmedInput.dropFirst(6)).trimmingCharacters(in: .whitespaces)
             if !text.isEmpty {
                 return .dictate(text: text)
             }
@@ -49,38 +56,52 @@ public struct IntentParser {
     }
 
     private func extractAppSwitchName(from input: String) -> String? {
-        let lower = normalize(input)
+        let normalized = normalize(input)
 
-        if lower.hasSuffix("e gec") {
-            return recoverAppName(from: input, suffix: "e geç")
+        if let app = extractByPrefix(normalized, prefix: "open ") {
+            return app
+        }
+        if let app = extractByPrefix(normalized, prefix: "switch to ") {
+            return app
+        }
+        if let app = extractByPrefix(normalized, prefix: "go to ") {
+            return app
+        }
+        if let app = extractByPrefix(normalized, prefix: "ac ") {
+            return app
         }
 
-        if lower.hasSuffix("a gec") {
-            return recoverAppName(from: input, suffix: "a geç")
-        }
-
-        if lower.hasSuffix("gec") {
-            let parts = input.split(separator: " ")
-            guard parts.count >= 2 else { return nil }
-            let appName = parts.dropLast().joined(separator: " ").trimmingCharacters(in: .whitespaces)
-            return appName.isEmpty ? nil : appName
+        for suffix in ["e gec", "a gec", "e git", "a git"] {
+            if let app = extractBySuffix(normalized, suffix: suffix) {
+                return app
+            }
         }
 
         return nil
     }
 
-    private func recoverAppName(from original: String, suffix: String) -> String? {
-        let cleaned = original
-            .replacingOccurrences(of: "’", with: "'")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+    private func extractByPrefix(_ normalized: String, prefix: String) -> String? {
+        guard normalized.hasPrefix(prefix) else { return nil }
+        let raw = String(normalized.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+        return canonicalAppName(raw)
+    }
 
-        guard cleaned.lowercased().hasSuffix(suffix) else { return nil }
-        let endIndex = cleaned.index(cleaned.endIndex, offsetBy: -suffix.count)
-        var base = String(cleaned[..<endIndex]).trimmingCharacters(in: .whitespaces)
-        if base.hasSuffix("'") {
-            base.removeLast()
-        }
-        return base.isEmpty ? nil : base
+    private func extractBySuffix(_ normalized: String, suffix: String) -> String? {
+        guard normalized.hasSuffix(suffix) else { return nil }
+        let cut = normalized.count - suffix.count
+        let base = String(normalized.prefix(cut)).trimmingCharacters(in: .whitespaces)
+        return canonicalAppName(base)
+    }
+
+    private func canonicalAppName(_ raw: String) -> String? {
+        let app = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if app.isEmpty { return nil }
+        let blocked = Set([
+            "komut", "command", "mode", "modu", "dikte", "dictation", "okuma", "read",
+            "gonder", "send", "iptal", "cancel"
+        ])
+        if blocked.contains(app) { return nil }
+        return app
     }
 
     private func normalize(_ text: String) -> String {

@@ -20,13 +20,14 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Master Voice")
                 .font(.title.bold())
-            Text("Hold Fn, speak, release. Modes: dictation / command / read.")
+            Text("Press Fn to start/stop listening. Modes: dictation / command / read.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 label(title: "Mode", value: viewModel.mode.rawValue)
                 label(title: "Listening", value: viewModel.isListening ? "yes" : "no")
                 label(title: "Front app", value: viewModel.frontmostAppName)
+                label(title: "Last intent", value: viewModel.lastIntentLine)
             }
         }
     }

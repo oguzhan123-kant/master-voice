@@ -31,7 +31,7 @@ Important:
 - Since app runs as `MasterVoice.app`, grant permissions to `MasterVoice` (not `Terminal`).
 
 Usage:
-- Hold `Fn` -> speak -> release
+- Press `Fn` -> start listening, press `Fn` again -> stop and execute
 - Commands: `komut modu`, `dikte modu`, `okuma modu`
 - Actions: `gonder`, `slack'e gec`, `codex'e gec`, `bunu oku`, `ozetle`
 

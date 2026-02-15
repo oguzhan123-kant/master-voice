@@ -8,6 +8,7 @@ final class MasterVoiceViewModel: ObservableObject {
     @Published var isListening = false
     @Published var liveTranscript = ""
     @Published var statusLine = "Booting..."
+    @Published var lastIntentLine = "-"
     @Published var frontmostAppName = "-"
     @Published var permissions = PermissionStatus.empty
 
@@ -24,6 +25,8 @@ final class MasterVoiceViewModel: ObservableObject {
     ])
 
     private var didStart = false
+    private var sessionTranscript = ""
+    private var processedTranscriptInSession = false
 
     func startup() async {
         guard !didStart else { return }
@@ -49,7 +52,7 @@ final class MasterVoiceViewModel: ObservableObject {
 
         permissions = permissionService.currentStatus()
         refreshFrontmostApp()
-        statusLine = "Ready. Hold Fn and speak. Use permission button if needed."
+        statusLine = "Ready. Press Fn to start/stop listening."
     }
 
     func requestPermissions() async {
@@ -90,11 +93,15 @@ final class MasterVoiceViewModel: ObservableObject {
     }
 
     private func handleFnDown() {
-        startListeningSession(trigger: "fn")
+        if isListening {
+            stopListeningSession(trigger: "fn-toggle")
+        } else {
+            startListeningSession(trigger: "fn-toggle")
+        }
     }
 
     private func handleFnUp() {
-        stopListeningSession(trigger: "fn")
+        // Fn release no-op in toggle mode.
     }
 
     private func startListeningSession(trigger: String) {
@@ -115,6 +122,8 @@ final class MasterVoiceViewModel: ObservableObject {
             try speechService.startListening()
             isListening = true
             mode = modeController.mode
+            sessionTranscript = ""
+            processedTranscriptInSession = false
             statusLine = "Listening (\(mode.rawValue)) via \(trigger)."
         } catch {
             statusLine = "Listening failed: \(error.localizedDescription)"
@@ -125,18 +134,38 @@ final class MasterVoiceViewModel: ObservableObject {
         guard isListening else { return }
         speechService.stopListening()
         isListening = false
-        statusLine = "Stopped listening via \(trigger)."
+
+        let fallback = sessionTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !processedTranscriptInSession && !fallback.isEmpty {
+            processAndMarkTranscript(fallback)
+        } else {
+            statusLine = "Stopped listening via \(trigger)."
+        }
     }
 
     private func handleTranscript(_ transcript: String, isFinal: Bool) {
         liveTranscript = transcript
+        sessionTranscript = transcript
         guard isFinal else { return }
+        processAndMarkTranscript(transcript)
+    }
+
+    private func processAndMarkTranscript(_ transcript: String) {
+        processedTranscriptInSession = true
         processTranscript(transcript)
     }
 
     private func processTranscript(_ transcript: String) {
+        let cleaned = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleaned.isEmpty {
+            lastIntentLine = "-"
+            statusLine = "No speech detected."
+            return
+        }
+
         let parsingMode: VoiceMode = modeController.mode == .idle ? .dictation : modeController.mode
-        let intent = parser.parse(input: transcript, mode: parsingMode)
+        let intent = parser.parse(input: cleaned, mode: parsingMode)
+        lastIntentLine = intent.description
         execute(intent: intent)
     }
 
@@ -199,7 +228,7 @@ final class MasterVoiceViewModel: ObservableObject {
             statusLine = ok ? "Typed text (\(text.count) chars)." : "Typing failed."
 
         case .unknown(let raw):
-            statusLine = "Unknown command: \(raw)"
+            statusLine = "Unknown command: \(raw). Try: gonder, slack'e gec, komut modu, dikte modu."
         }
     }
 

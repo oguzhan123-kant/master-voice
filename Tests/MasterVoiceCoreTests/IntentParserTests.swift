@@ -26,6 +26,19 @@ final class IntentParserTests: XCTestCase {
 
     func testSwitchAppParsing() {
         let intent = parser.parse(input: "Slack'e geç", mode: .command)
-        XCTAssertEqual(intent, .switchApp(name: "Slack"))
+        XCTAssertEqual(intent, .switchApp(name: "slack"))
+    }
+
+    func testEnglishCommandAliases() {
+        let send = parser.parse(input: "send", mode: .command)
+        XCTAssertEqual(send, .send)
+
+        let commandMode = parser.parse(input: "command mode", mode: .dictation)
+        XCTAssertEqual(commandMode, .switchMode(.command))
+    }
+
+    func testSwitchAppWithEnglishPrefix() {
+        let intent = parser.parse(input: "open slack", mode: .command)
+        XCTAssertEqual(intent, .switchApp(name: "slack"))
     }
 }
